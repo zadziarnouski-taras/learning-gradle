@@ -1,0 +1,206 @@
+//Plugin provides a set of tasks that solve some problem.
+//More details about Java Plugin: https://docs.gradle.org/current/userguide/java_plugin.html#header
+plugins {
+  id 'java'
+}
+
+//The lifecycle gradle consists of 3 stages: initialization -> configuration -> execution. Each stage begins only
+// after the completion of the previous one.
+
+//Dependency source configuration block. Maven Central is a popular repository hosting open source libraries for
+// consumption by Java projects. Some projects might prefer to store dependencies on a shared drive or as part of the
+// project source code instead of a binary repository product.
+repositories {
+  mavenCentral()
+//  maven {
+//    url 'https://repo.foo.org/m2'
+//    credentials {
+//      username 'user'
+//      password 'secret'
+//    }
+//  }
+//  flatDir {
+//    dirs 'lib'
+//  }
+}
+
+//Many settings are part of the convention and default values are provided, but they can be changed:
+sourceSets {
+//  main {
+//    java {
+//      srcDirs = ['src/java']
+//    }
+//    resources {
+//      srcDirs = ['src/resources']
+//    }
+//  }
+}
+
+//Projects can be configured in isolation from each other, often projects have common features.
+//More details about build script blocks: https://docs.gradle.org/current/dsl/org.gradle.api.Project.html#org.gradle.api.Project:allprojects(groovy.lang.Closure)
+//Configures this project and each of its sub-projects.
+allprojects {
+  group 'by.zadziarnouski'
+  version '1.0-SNAPSHOT'
+
+//  Configures the build script classpath for this project(similar to dependency management of Maven).
+  buildscript {
+    dependencies {
+      classpath "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+      classpath "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    }
+  }
+
+}
+
+
+////Configures the sub-projects of this project.
+subprojects {
+}
+
+configurations {
+  custom
+}
+
+dependencies {
+  custom 'com.google.guava:guava:31.1-jre'
+}
+
+//Dependency block. At different times in the build process, different dependencies may be needed. Logically related
+// dependencies are grouped in a configuration (you can create your own configuration in a configuration block above):
+// compileOnly, implementation, runtimeOnly, testCompileOnly, testImplementation, testRuntimeOnly,
+// annotationProcessor, testAnnotationProcessor.
+dependencies {
+  //first way to add dependency
+  implementation 'com.google.guava:guava:31.1-jre'
+  //first way to add dependency
+//  implementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
+  //third way to add dependency
+  implementation files('libs/foo.jar', 'libs/bar.jar')
+  //fourth way to add dependency
+  implementation fileTree(dir: 'libs', include: '*.jar')
+  //fifth way to add dependency
+//  implementation project(':shared')
+
+  //gradle dependencies --configuration runtime
+  //gradle dependencyInsight --dependency guava
+//  implementation 'com.google.j2objc:j2objc-annotations:1.3'   //add conflict
+
+  testImplementation "org.junit.jupiter:junit-jupiter-api"
+  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+}
+
+//first way to create a task
+task putOnSocks
+putOnSocks.description = "description"
+putOnSocks.group = "group"
+putOnSocks.doLast {println "Putting on Socks"}
+
+//second way to create a task
+task putOnShoes {
+  description "bla-bla-bla"
+  group "some group"
+  doLast {
+    println "Putting on Shoes"
+  }
+  dependsOn putOnSocks
+  shouldRunAfter "takeShower"
+}
+
+//third way to create a task
+class HelloTask extends DefaultTask {
+
+  @Nested
+  String firstName
+
+  @TaskAction
+  void doAction() {
+    println "Hello, $firstName"
+  }
+}
+
+task hello(type: HelloTask) {
+  firstName = "Taras"
+}
+
+//fourth way to create a task
+task custom(type: CustomTask) {
+  from 'Minsk'
+  dependsOn 'build'
+}
+
+//3 ways to link tasks together : dependsOn, finalizedBy, shouldRunAfter
+task eatBreakfast {
+  finalizedBy "brushYourTeeth"
+  doLast {println "Om nom nom breakfast!"}
+}
+
+task brushYourTeeth {
+  doLast {println "Brush Brush Brush."}
+}
+
+task takeShower {
+  doLast {println "Taking a shower."}
+}
+
+task putOnFragrance {
+  shouldRunAfter "takeShower"
+  doLast {println "Smellin' fresh!"}
+}
+
+task getReady {
+  dependsOn = ["takeShower", "eatBreakfast", "putOnShoes"]
+}
+
+task getEquipped {
+  dependsOn tasks.matching {task -> task.name.startsWith("putOn")}
+  doLast {
+    println "All geared up!"
+  }
+}
+
+//Gradle provides many useful tasks out of the box.
+// More details: https://docs.gradle.org/current/dsl/org.gradle.api.plugins.antlr.AntlrTask.html
+task copyFiles(type: Copy) {
+  from('src/main/doc') {
+    include "*"
+    into "doc" //subfolder 1
+  }
+  from('src/main/images') {
+    include "*.jpg"
+    into "images" //subfolder 2
+  }
+  into 'build/target' //main folder
+}
+
+task zipFiles(type: Zip) {
+  baseName 'files'
+  destinationDir = file('build/target')
+  from 'src/main'
+}
+
+task deleteZip(type: Delete) {
+  delete 'build'
+}
+
+//Parameterized build. There are 3 ways to add parameters, in this order(priority): env.variables, gradle cli, gradle
+// properties(create file gradle.properties)
+
+//gradle -Pgreeting="Hello world from command line" printGreeting
+task printGreeting {
+  println greeting
+}
+//env.variables
+ext {
+  greeting = "Hello world from inside the build script"
+}
+
+//Logging in gradle. Error/Quite(-q) -> Wanring Lifecycle(default) -> Info(-i) -> Debug(-d).
+
+//The ability to put the build tool under version control
+wrapper {
+  gradleVersion = '4.4.1'
+}
+
+
+

@@ -1,0 +1,5 @@
+//Set project name
+rootProject.name = 'learning-gradle'
+
+//Declare subproject
+include 'bluewhale'

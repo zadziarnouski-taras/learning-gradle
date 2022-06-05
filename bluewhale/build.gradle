@@ -1,0 +1,49 @@
+plugins {
+    id 'java'
+}
+
+group 'by.zadziarnouski'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+allprojects {
+  task hello {
+    doLast { task ->
+      println "I'm $task.project.name"
+    }
+  }
+}
+
+subprojects {
+  hello {
+    doLast {
+      println "- I depend on water"
+    }
+  }
+}
+
+project(':bluewhale').hello {
+  doLast {
+    println "- I'm the largest animal that has ever lived on this planet."
+  }
+}
+
+configure(subprojects.findAll {it.name != 'bluewhale'}) {
+  hello {
+    doLast {
+      println '- I love to spend time in the arctic waters.'
+    }
+  }
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+}
+
+test {
+//    useJUnitPlatform()
+}
